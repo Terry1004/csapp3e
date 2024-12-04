@@ -1,0 +1,166 @@
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Include your name and ID here.
+#
+# Describe how and why you modified the baseline code.
+#
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len
+ncopy:
+
+##################################################################
+# You can modify this portion
+	# Loop header
+	iaddq $-7, %rdx		    # len < 7?
+	jl L1H7	            	# else goto L1H7
+Loop:
+	mrmovq (%rdi), %rcx	    # read val from src...
+	mrmovq 8(%rdi), %r8     # read val from src...
+	mrmovq 16(%rdi), %r9    # read val from src...
+	mrmovq 24(%rdi), %r10   # read val from src...
+	mrmovq 32(%rdi), %r11   # read val from src...
+	mrmovq 40(%rdi), %r12   # read val from src...
+	mrmovq 48(%rdi), %r13   # read val from src...
+	rmmovq %rcx, (%rsi)     # ...and store it to dst
+	rmmovq %r8, 8(%rsi)     # ...and store it to dst
+	rmmovq %r9, 16(%rsi)    # ...and store it to dst
+	rmmovq %r10, 24(%rsi)   # ...and store it to dst
+	rmmovq %r11, 32(%rsi)   # ...and store it to dst
+	rmmovq %r12, 40(%rsi)   # ...and store it to dst
+	rmmovq %r13, 48(%rsi)   # ...and store it to dst
+	andq %rcx, %rcx		    # val <= 0?
+	jle Npos1               # if so goto Npos1
+	iaddq $1, %rax		    # count++
+Npos1:
+	andq %r8, %r8		    # val <= 0?
+	jle Npos2               # if so goto Npos2
+	iaddq $1, %rax		    # count++
+Npos2:
+	andq %r9, %r9		    # val <= 0?
+	jle Npos3               # if so goto Npos3
+	iaddq $1, %rax		    # count++
+Npos3:
+	andq %r10, %r10		    # val <= 0?
+	jle Npos4               # if so goto Npos4
+	iaddq $1, %rax		    # count++
+Npos4:
+	andq %r11, %r11		    # val <= 0?
+	jle Npos5               # if so goto Npos5
+	iaddq $1, %rax		    # count++
+Npos5:
+	andq %r12, %r12		    # val <= 0?
+	jle Npos6               # if so goto Npos6
+	iaddq $1, %rax		    # count++
+Npos6:
+	andq %r13, %r13		    # val <= 0?
+	jle Inc               # if so goto Inc
+	iaddq $1, %rax		    # count++
+Inc:
+	iaddq $56, %rdi		    # src += 7
+	iaddq $56, %rsi		    # dst += 7
+	iaddq $-7, %rdx		    # len -= 7
+	jge Loop			    # if so, goto Loop:
+L1H7:
+	iaddq $4, %rdx          # len == -4?
+	jl L5H7
+	jg L1H3
+	je Case3                
+L5H7:
+	iaddq $2, %rdx
+	je Case1
+	jg Case2
+	jl Done
+L1H3:
+	iaddq $-2, %rdx
+	jl Case4
+	je Case5                 
+Case6:
+	mrmovq 32(%rdi), %rcx	# read val from src...
+	mrmovq 40(%rdi), %r8	# read val from src...
+	rmmovq %rcx, 32(%rsi)	# ...and store it to dst
+	rmmovq %r8, 40(%rsi)	# ...and store it to dst
+	andq %rcx, %rcx		    # val <= 0?
+	jle C6NPos         		# if so, goto C6NPos
+	iaddq $1, %rax		    # count++
+C6NPos:
+	andq %r8, %r8		    # val <= 0?
+	jle Case4         		# if so, goto Case4
+	iaddq $1, %rax		    # count++
+Case4:
+	mrmovq 16(%rdi), %rcx	# read val from src...
+	mrmovq 24(%rdi), %r8	# read val from src...
+	rmmovq %rcx, 16(%rsi)	# ...and store it to dst
+	rmmovq %r8, 24(%rsi)	# ...and store it to dst
+	andq %rcx, %rcx		    # val <= 0?
+	jle C4NPos         		# if so, goto C4NPos
+	iaddq $1, %rax		    # count++
+C4NPos:
+	andq %r8, %r8		    # val <= 0?
+	jle Case2         		# if so, goto Case2
+	iaddq $1, %rax		    # count++
+Case2:
+	mrmovq (%rdi), %rcx	    # read val from src...
+	mrmovq 8(%rdi), %r8	    # read val from src...
+	rmmovq %rcx, (%rsi)	    # ...and store it to dst
+	rmmovq %r8, 8(%rsi)	    # ...and store it to dst
+	andq %rcx, %rcx		    # val <= 0?
+	jle C2NPos         		# if so, goto C2NPos
+	iaddq $1, %rax		    # count++
+C2NPos:
+	andq %r8, %r8		    # val <= 0?
+	jle Done         		# if so, goto Done
+	iaddq $1, %rax		    # count++
+	ret
+Case5:
+	mrmovq 32(%rdi), %rcx	# read val from src...
+	mrmovq 24(%rdi), %r8	# read val from src...
+	rmmovq %rcx, 32(%rsi)	# ...and store it to dst
+	rmmovq %r8, 24(%rsi)	# ...and store it to dst
+	andq %rcx, %rcx		    # val <= 0?
+	jle C5NPos         		# if so, goto C5NPos
+	iaddq $1, %rax		    # count++
+C5NPos:
+	andq %r8, %r8		    # val <= 0?
+	jle Case3         		# if so, goto Case3
+	iaddq $1, %rax		    # count++
+Case3:
+	mrmovq (%rdi), %rcx	    # read val from src...
+	mrmovq 8(%rdi), %r8	    # read val from src...
+	mrmovq 16(%rdi), %r9	# read val from src...
+	rmmovq %rcx, (%rsi)	    # ...and store it to dst
+	rmmovq %r8, 8(%rsi)	    # ...and store it to dst
+	rmmovq %r9, 16(%rsi)	# ...and store it to dst
+	andq %rcx, %rcx		    # val <= 0?
+	jle C3NPos1         	# if so, goto C3NPos1
+	iaddq $1, %rax		    # count++
+C3NPos1:
+	andq %r8, %r8		    # val <= 0?
+	jle C3NPos2         	# if so, goto C3NPos2
+	iaddq $1, %rax		    # count++
+C3NPos2:
+	andq %r9, %r9		    # val <= 0?
+	jle Done         		# if so, goto Done
+	iaddq $1, %rax		    # count++
+	ret
+Case1:
+	mrmovq (%rdi), %rcx	    # read val from src...
+	rmmovq %rcx, (%rsi)	    # ...and store it to dst
+	andq %rcx, %rcx		    # val <= 0?
+	jle Done         		# if so, goto Done
+	iaddq $1, %rax		    # count++
+	ret
+
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */

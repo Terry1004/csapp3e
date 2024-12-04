@@ -1,0 +1,18 @@
+services:
+  csapp3e:
+    image: csapp3e:latest
+    container_name: csapp3e
+    build: .
+    platform: linux/amd64
+    volumes:
+      - type: bind
+        source: .
+        target: /root/workspace
+    tty: true
+    stdin_open: true
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_PTRACE
+    environment:
+      - USER
