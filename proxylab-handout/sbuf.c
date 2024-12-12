@@ -20,7 +20,7 @@ void sbuf_enque(sbuf_t *sp, int item)
 {
     P(&sp->slots);
     P(&sp->mutex);
-    sp->buf[(sp->rear++)%(sp->n)] = item;
+    sp->buf[(sp->rear++) % (sp->n)] = item;
     V(&sp->mutex);
     V(&sp->items);
 }
@@ -30,10 +30,9 @@ int sbuf_deque(sbuf_t *sp)
 
     P(&sp->items);
     P(&sp->mutex);
-    item = sp->buf[(sp->front++)%(sp->n)];
+    item = sp->buf[(sp->front++) % (sp->n)];
     V(&sp->mutex);
     V(&sp->slots);
 
     return item;
 }
-

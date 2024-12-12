@@ -33,11 +33,11 @@ static const char *proxy_connection_hdr = "Proxy-Connection: close\r\n";
 static sbuf_t sbuf;
 static lru_t lru;
 
-void* thread(void *vargp);
+void *thread(void *vargp);
 void doit(int fd);
 int clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);
-int read_req_line(rio_t* rio, int fd, char* method, char* uri, char* domain, char* host, char* port, char* path);
-int process_req(rio_t* rio, int clientfd, int fd, char* buf, char* path, char* domain);
+int read_req_line(rio_t *rio, int fd, char *method, char *uri, char *domain, char *host, char *port, char *path);
+int process_req(rio_t *rio, int clientfd, int fd, char *buf, char *path, char *domain);
 
 int main(int argc, char *argv[])
 {
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     sbuf_init(&sbuf, SBUF_SIZE);
     for (int i = 0; i < NUM_THREADS; i++)
         Pthread_create(&tid, NULL, thread, NULL);
-    
+
     lru_init(&lru, MAX_CACHE_SIZE);
 
     while (1)
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void* thread(void* vargp)
+void *thread(void *vargp)
 {
     Pthread_detach(pthread_self());
     while (1)
@@ -90,11 +90,11 @@ void doit(int fd)
 {
     rio_t rio;
     char buf[MAXLINE], method[MAXLINE], domain[MAXLINE], host[MAXLINE], port[MAXLINE], path[MAXLINE];
-    char* uri;
+    char *uri;
 
     int resp_size;
-    char* resp;
-    
+    char *resp;
+
     int clientfd;
     int errcode;
     int rc, num_filled, last_rc;
@@ -108,18 +108,19 @@ void doit(int fd)
     /* Read request line */
     Rio_readinitb(&rio, fd);
     errcode = read_req_line(&rio, fd, method, uri, domain, host, port, path);
-    switch (errcode) {
-        case -1:
-            return;
-        case -2:
-            clienterror(fd, "request line", "400", "Malformed Request Line", "The request line format is invalid");
-            return;
-        case -3:
-            clienterror(fd, method, "501", "Not Implemented", "Proxy only supports GET");
-            return;
-        case -4:
-            clienterror(fd, uri, "400", "Malformed URI", "The uri is not a valid http uri");
-            return;
+    switch (errcode)
+    {
+    case -1:
+        return;
+    case -2:
+        clienterror(fd, "request line", "400", "Malformed Request Line", "The request line format is invalid");
+        return;
+    case -3:
+        clienterror(fd, method, "501", "Not Implemented", "Proxy only supports GET");
+        return;
+    case -4:
+        clienterror(fd, uri, "400", "Malformed URI", "The uri is not a valid http uri");
+        return;
     }
 
     /* Look up in cache */
@@ -137,32 +138,34 @@ void doit(int fd)
     }
 
     /* Open connection to server */
-    if ((clientfd = Open_clientfd(host, port)) < 0) {
+    if ((clientfd = Open_clientfd(host, port)) < 0)
+    {
         clienterror(fd, domain, "502", "Connection Failed", "Cannot connect to upstream server");
         return;
     }
 
     /* Read & Send requet */
     errcode = process_req(&rio, clientfd, fd, buf, path, domain);
-    switch (errcode) {
-        case -1:
-            return;
-        case -2:
-            clienterror(fd, domain, "502", "Connection Closed", "Connection to upstream server closed");
-            Close(clientfd);
-            return;
-        case -3:
-            clienterror(fd, buf, "400", "Malformed Header", "The header format is invalid");
-            Close(clientfd);
-            return;
-        case -4:
-            clienterror(fd, "", "431", "Max Header Exceeded", "The number of headers exceeds the maximum allowed");
-            Close(clientfd);
-            return;
-        case -5:
-            clienterror(fd, "", "400", "Malformed Header", "The header section does not end with CRLF");
-            Close(clientfd);
-            return;
+    switch (errcode)
+    {
+    case -1:
+        return;
+    case -2:
+        clienterror(fd, domain, "502", "Connection Closed", "Connection to upstream server closed");
+        Close(clientfd);
+        return;
+    case -3:
+        clienterror(fd, buf, "400", "Malformed Header", "The header format is invalid");
+        Close(clientfd);
+        return;
+    case -4:
+        clienterror(fd, "", "431", "Max Header Exceeded", "The number of headers exceeds the maximum allowed");
+        Close(clientfd);
+        return;
+    case -5:
+        clienterror(fd, "", "400", "Malformed Header", "The header section does not end with CRLF");
+        Close(clientfd);
+        return;
     }
 
     /* Forward response */
@@ -176,7 +179,7 @@ void doit(int fd)
     }
     if (rc == 0 && num_filled == 1)
     {
-        if(lru_put(&lru, uri, resp, last_rc) < 0)
+        if (lru_put(&lru, uri, resp, last_rc) < 0)
             app_errorf("OOM when caching response");
     }
 
@@ -188,7 +191,7 @@ void doit(int fd)
  * clienterror - returns an error message to the client
  */
 /* $begin clienterror */
-int clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg) 
+int clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg)
 {
     char buf[MAXLINE];
 
@@ -204,7 +207,9 @@ int clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg
     sprintf(buf, "<html><title>Tiny Error</title>");
     if (Rio_writen(fd, buf, strlen(buf)) < 0)
         return -1;
-    sprintf(buf, "<body bgcolor=""ffffff"">\r\n");
+    sprintf(buf, "<body bgcolor="
+                 "ffffff"
+                 ">\r\n");
     if (Rio_writen(fd, buf, strlen(buf)) < 0)
         return -1;
     sprintf(buf, "%s: %s\r\n", errnum, shortmsg);
@@ -221,14 +226,13 @@ int clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg
 }
 /* $end clienterror */
 
-
 /* Return error code:
 -1: Error read from client
 -2: The request line format is invalid
 -3: Proxy only supports GET
 -4: The uri is not a valid http uri
 */
-int read_req_line(rio_t* rio, int fd, char* method, char* uri, char* domain, char* host, char* port, char* path)
+int read_req_line(rio_t *rio, int fd, char *method, char *uri, char *domain, char *host, char *port, char *path)
 {
     char buf[MAXLINE], version[MAXLINE];
     int num_uri_tokens;
@@ -246,7 +250,8 @@ int read_req_line(rio_t* rio, int fd, char* method, char* uri, char* domain, cha
         return -4;
     if (num_uri_tokens == 1)
         strcpy(path, "/");
-    if (sscanf(domain, "%[^:]:%s", host, port) < 2) {
+    if (sscanf(domain, "%[^:]:%s", host, port) < 2)
+    {
         strcpy(host, domain);
         strcpy(port, HTTP_PORT);
     }
@@ -261,7 +266,7 @@ int read_req_line(rio_t* rio, int fd, char* method, char* uri, char* domain, cha
 -4: Maximum number of headers exceeded
 -5: Header section not ended with CRLF
 */
-int process_req(rio_t* rio, int clientfd, int fd, char* buf, char* path, char* domain)
+int process_req(rio_t *rio, int clientfd, int fd, char *buf, char *path, char *domain)
 {
     char hdrkey[MAXLINE];
     int num_header_tokens, rc, num_headers = 0;
@@ -273,7 +278,8 @@ int process_req(rio_t* rio, int clientfd, int fd, char* buf, char* path, char* d
         return -2;
 
     /* Read & send headers */
-    while ((rc = Rio_readlineb(rio, buf, MAXLINE)) > 0) {
+    while ((rc = Rio_readlineb(rio, buf, MAXLINE)) > 0)
+    {
         if (!strcmp(buf, CRLF))
         {
             end_with_crlf = true;
@@ -300,13 +306,14 @@ int process_req(rio_t* rio, int clientfd, int fd, char* buf, char* path, char* d
     if (!end_with_crlf)
         return -5;
 
-    if (Rio_writen(clientfd, (void*) user_agent_hdr, strlen(user_agent_hdr)) < 0)
+    if (Rio_writen(clientfd, (void *)user_agent_hdr, strlen(user_agent_hdr)) < 0)
         return -2;
-    if (Rio_writen(clientfd, (void*) connection_hdr, strlen(connection_hdr)) < 0)
+    if (Rio_writen(clientfd, (void *)connection_hdr, strlen(connection_hdr)) < 0)
         return -2;
-    if (Rio_writen(clientfd, (void*) proxy_connection_hdr, strlen(proxy_connection_hdr)) < 0)
+    if (Rio_writen(clientfd, (void *)proxy_connection_hdr, strlen(proxy_connection_hdr)) < 0)
         return -2;
-    if (!has_host) {
+    if (!has_host)
+    {
         sprintf(buf, "Host: %s", domain);
         if (Rio_writen(clientfd, buf, strlen(buf)) < 0)
             return -2;

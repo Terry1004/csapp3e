@@ -4,11 +4,12 @@
 
 #include <semaphore.h>
 
-typedef struct {
-    int* buf; /* Buffer array */
-    int n; /* Maximum number of slots */
-    int front; /* buf[front % n] is the first item */
-    int rear; /* buf[(rear - 1) % n] is the last item*/
+typedef struct
+{
+    int *buf;    /* Buffer array */
+    int n;       /* Maximum number of slots */
+    int front;   /* buf[front % n] is the first item */
+    int rear;    /* buf[(rear - 1) % n] is the last item*/
     sem_t mutex; /* Protect access to buf */
     sem_t slots; /* Count available slots */
     sem_t items; /* Count available items */
